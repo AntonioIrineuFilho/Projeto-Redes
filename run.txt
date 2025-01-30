@@ -1,0 +1,5 @@
+1º -> python server.py
+
+2º -> python client.py(outro terminal)
+
+3º -> rodar os comandos(no detalhar deve-se escrever "detalhar" + o ip de desejo
