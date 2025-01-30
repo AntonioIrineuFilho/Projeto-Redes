@@ -2,4 +2,6 @@
 
 2º -> python client.py(outro terminal)
 
-3º -> rodar os comandos(no detalhar deve-se escrever "detalhar" + o ip de desejo
+3º -> rodar os comandos(no detalhar deve-se escrever "detalhar" + o ip de desejo)
+
+(*apenas se necessário*) gerar certificado SSL antes de rodar -> openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 365 -nodes
