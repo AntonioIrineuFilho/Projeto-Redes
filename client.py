@@ -4,6 +4,7 @@ import json
 import os
 import psutil
 import platform
+import time
 
 class Client:
     def __init__(self):
@@ -29,7 +30,6 @@ class Client:
                         return temp
                 except FileNotFoundError:
                     continue
-        # Se nenhum caminho funcionar, retorna None
             print("Temperatura do CPU não encontrada.")
             return None
         except Exception as e:
@@ -51,7 +51,6 @@ class Client:
             except Exception as e:
                 print(f"Erro na descoberta: {e}")
                 return False
-
 
     def get_system_info(self):
         system = platform.system().lower()
@@ -79,7 +78,9 @@ class Client:
 
     def run(self):
         if self.discover_server():
-            self.send_data()
+            while True:
+                self.send_data()
+                time.sleep(30)  # Aguarda 30 segundos antes de enviar novamente
 
 if __name__ == "__main__":
     Client().run()
