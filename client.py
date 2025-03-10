@@ -59,7 +59,7 @@ class Client:
     def pegar_specs(self):
         """Coleta informações do sistema."""
         system = platform.system().lower()
-        cpu_temp = self.pegar_cpu_temp_windows()
+        cpu_temp = self.pegar_cpu_temp_linux()
 
         return {
             'Processadores': os.cpu_count(),
