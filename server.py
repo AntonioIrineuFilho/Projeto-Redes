@@ -8,7 +8,7 @@ sair = False
 
 class Server:
     def __init__(self):
-        self.clients = {}  # Agora armazena {ip: {'data': client_data, 'last_update': timestamp}}
+        self.clients = {}  # Armazena {ip: {'data': client_data, 'last_update': timestamp}}
         self.host = '0.0.0.0'
         self.discovery_port = 50000
         self.tcp_port = 50001
@@ -18,7 +18,7 @@ class Server:
         self.tcp_socket = None
         self.setup_udp()
         Thread(target=self.setup_tcp).start()
-        Thread(target=self.check_inactive_clients).start()  # Inicia a verificação de clientes inativos
+        Thread(target=self.checar_cliente_inativo).start()  # Inicia a verificação de clientes inativos
         self.user_interface()
 
     def setup_udp(self):
@@ -47,12 +47,12 @@ class Server:
             try:
                 client_socket, addr = self.tcp_socket.accept()
                 ssl_socket = context.wrap_socket(client_socket, server_side=True)
-                Thread(target=self.handle_client, args=(ssl_socket, addr)).start()
+                Thread(target=self.manter_cliente, args=(ssl_socket, addr)).start()
             except Exception as e:
                 if not sair:
                     print(f"Erro no TCP: {e}")
 
-    def handle_client(self, ssl_socket, addr):
+    def manter_cliente(self, ssl_socket, addr):
         try:
             data = ssl_socket.recv(1024).decode()
             client_data = json.loads(data)
@@ -64,7 +64,7 @@ class Server:
         except Exception as e:
             print(f"Erro: {e}")
 
-    def check_inactive_clients(self):
+    def checar_cliente_inativo(self):
         """Remove clientes inativos por mais de 30 segundos."""
         while not sair:
             time.sleep(10)  # Verifica a cada 10 segundos
@@ -77,35 +77,35 @@ class Server:
                 print(f"Removendo cliente inativo: {ip}")
                 del self.clients[ip]
 
-    def calculate_averages(self):
-        averages = {}
-        for key in ['processors', 'free_ram', 'free_disk', 'cpu_temp']:
+    def calcular_media(self):
+        medias = {}
+        for key in ['Processadores', 'RAM Livre', 'Disco Livre', 'Temperatura CPU']:
             values = [c['data'][key] for c in self.clients.values() if c['data'][key] is not None]
-            averages[key] = sum(values)/len(values) if values else None
-        return averages
+            medias[key] = sum(values)/len(values) if values else None
+        return medias
 
     def user_interface(self):
         global sair
         while not sair:
-            cmd = input("Comando (list/detalhar/media/sair): ")
-            if cmd == "list":
+            cmd = input("Comando (Listar/Detalhar <IP>/Media/Sair): ").upper()
+            if cmd == "LISTAR":
                 print("Clientes:", list(self.clients.keys()))
-            elif cmd.startswith("detalhar"):
+            elif cmd.startswith("DETALHAR"):
                 try:
                     ip = cmd.split()[1]
                     if ip in self.clients:
                         client_data = self.clients[ip]['data']
                         print(f"Detalhes do dispositivo {ip}:")
-                        for key in ['processors', 'free_ram', 'free_disk', 'cpu_temp']:
+                        for key in ['Processadores', 'RAM Livre', 'Disco Livre', 'Temperatura CPU']:
                             value = client_data.get(key, "N/A")
                             print(f"{key}: {value}")
                     else:
                         print(f"Dispositivo com IP {ip} não encontrado.")
                 except IndexError:
                     print("Uso correto: detalhar <IP>")
-            elif cmd == "media":
-                print(self.calculate_averages())
-            elif cmd == "sair":
+            elif cmd == "MEDIA":
+                print(self.calcular_media())
+            elif cmd == "SAIR":
                 sair = True
                 self.udp_socket.close()
                 self.tcp_socket.close()
