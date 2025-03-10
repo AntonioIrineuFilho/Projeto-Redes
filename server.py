@@ -3,6 +3,8 @@ import ssl
 import json
 from threading import Thread
 
+sair = False
+
 class Server:
     def __init__(self):
         self.clients = {}
@@ -11,6 +13,8 @@ class Server:
         self.tcp_port = 50001
         self.certfile = 'server.crt'
         self.keyfile = 'server.key'
+        self.udp_socket = None
+        self.tcp_socket = None
         self.setup_udp()
         Thread(target=self.setup_tcp).start()
         self.user_interface()
@@ -21,11 +25,15 @@ class Server:
         Thread(target=self.listen_udp).start()
 
     def listen_udp(self):
-        while True:
-            data, addr = self.udp_socket.recvfrom(1024)
-            if data.decode() == 'DISCOVER':
-                response = json.dumps({'port': self.tcp_port})
-                self.udp_socket.sendto(response.encode(), addr)
+        while not sair:
+            try:
+                data, addr = self.udp_socket.recvfrom(1024)
+                if data.decode() == 'DISCOVER':
+                    response = json.dumps({'port': self.tcp_port})
+                    self.udp_socket.sendto(response.encode(), addr)
+            except Exception as e:
+                if not sair:
+                    print(f"Erro no UDP: {e}")
 
     def setup_tcp(self):
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,16 +41,20 @@ class Server:
         self.tcp_socket.listen(5)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(self.certfile, self.keyfile)
-        while True:
-            client_socket, addr = self.tcp_socket.accept()
-            ssl_socket = context.wrap_socket(client_socket, server_side=True)
-            Thread(target=self.handle_client, args=(ssl_socket, addr)).start()
+        while not sair:
+            try:
+                client_socket, addr = self.tcp_socket.accept()
+                ssl_socket = context.wrap_socket(client_socket, server_side=True)
+                Thread(target=self.handle_client, args=(ssl_socket, addr)).start()
+            except Exception as e:
+                if not sair:
+                    print(f"Erro no TCP: {e}")
 
     def handle_client(self, ssl_socket, addr):
         try:
             data = ssl_socket.recv(1024).decode()
-            client_data = json.loads(data)
-            self.clients[addr[0]] = client_data
+            client_data = json.loads(data) # carrega os dados do cliente localizado 
+            self.clients[addr[0]] = client_data # guarda os dados no value da key do ip do cliente
             ssl_socket.close()
         except Exception as e:
             print(f"Erro: {e}")
@@ -55,7 +67,8 @@ class Server:
         return averages
 
     def user_interface(self):
-        while True:
+        global sair
+        while not sair:
             cmd = input("Comando (list/detalhar/media/sair): ")
             if cmd == "list":
                 print("Clientes:", list(self.clients.keys()))
@@ -78,7 +91,10 @@ class Server:
             elif cmd == "media":
                 print(self.calculate_averages())
             elif cmd == "sair":
-                exit()
+                sair = True
+                self.udp_socket.close()  # Fecha o socket UDP
+                self.tcp_socket.close()  # Fecha o socket TCP
+                break
 
 if __name__ == "__main__":
     Server()

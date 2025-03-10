@@ -35,7 +35,9 @@ class Client:
         except Exception as e:
             print(f"Erro ao ler temperatura no Linux: {e}")
             return None
-        
+
+    def get_cpu_temp_windows(self):
+        return None     
         
     def discover_server(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -53,11 +55,7 @@ class Client:
 
     def get_system_info(self):
         system = platform.system().lower()
-        cpu_temp = None
-
-        # Obtém a temperatura de acordo com o sistema operacional
-        if system == "linux":
-            cpu_temp = self.get_cpu_temp_linux()
+        cpu_temp = self.get_cpu_temp_windows()
 
         return {
             'processors': os.cpu_count(),
