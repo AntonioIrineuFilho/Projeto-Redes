@@ -40,19 +40,24 @@ class Client:
         return None     
         
     def discover_server(self):
+        """Descobre o servidor na rede local."""
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            print("Enviando mensagem de descoberta...")
             sock.sendto(b'DISCOVER', ('255.255.255.255', self.discovery_port))
             sock.settimeout(5)
             try:
                 data, addr = sock.recvfrom(1024)  # addr contém (IP_servidor, porta)
+                print(f"Resposta recebida do servidor: {data.decode()}")  # Log da resposta
                 self.server_info = (addr[0], json.loads(data.decode())['port'])
+                print(f"Servidor encontrado: {self.server_info}")
                 return True
             except Exception as e:
                 print(f"Erro na descoberta: {e}")
                 return False
 
     def get_system_info(self):
+        """Coleta informações do sistema."""
         system = platform.system().lower()
         cpu_temp = self.get_cpu_temp_windows()
 
@@ -64,19 +69,24 @@ class Client:
         }
 
     def send_data(self):
+        """Envia os dados do sistema para o servidor."""
         context = ssl.create_default_context()
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
         
         try:
+            print(f"Conectando ao servidor: {self.server_info}")
             with socket.create_connection(self.server_info) as sock:
                 with context.wrap_socket(sock, server_hostname=self.server_info[0]) as ssock:
-                    ssock.send(json.dumps(self.get_system_info()).encode())
+                    data = json.dumps(self.get_system_info()).encode()
+                    print(f"Enviando dados: {data}")  # Log dos dados enviados
+                    ssock.send(data)
             print("Dados enviados com sucesso!")
         except Exception as e:
             print(f"Erro na conexão: {e}")
 
     def run(self):
+        """Executa o cliente."""
         if self.discover_server():
             while True:
                 self.send_data()
